@@ -1,0 +1,16 @@
+{
+	"name": "Inserter",
+	"tree": {
+		"$className": "DataModel",
+		"ServerStorage": {
+			"$className": "ServerStorage",
+			"Inserter": {
+				"$className": "Folder",
+				"Packages": {
+					"$path": "Packages"
+				},
+				"$path": "src"
+			}
+		}
+	}
+}

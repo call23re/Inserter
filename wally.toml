@@ -1,6 +1,6 @@
 [package]
 name = "call23re/inserter"
-version = "1.0.0"
+version = "1.0.1"
 realm = "shared"
 registry = "https://github.com/upliftgames/wally-index"
 

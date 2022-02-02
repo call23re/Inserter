@@ -1,8 +1,7 @@
 local AssetService = game:GetService("AssetService")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
-local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 
-local Constants = require(script.Parent.Constants)
 local Util = require(script.Parent.Util)
 
 local Characters = script.Parent.Models
@@ -52,23 +51,22 @@ function Inserter:_LoadBundle(ID)
 	if not ok then return false end
 
 	local Character = (self.Settings.Rig == "R15" and Characters.R15 or Characters.R6):Clone()
-	local HumanoidDescription = Instance.new("HumanoidDescription")
 
-	HumanoidDescription.HeadColor = Color3.new(1, 1, 1)
-	HumanoidDescription.LeftArmColor = Color3.new(1, 1, 1)
-	HumanoidDescription.LeftLegColor = Color3.new(1, 1, 1)
-	HumanoidDescription.RightArmColor = Color3.new(1, 1, 1)
-	HumanoidDescription.RightLegColor = Color3.new(1, 1, 1)
-	HumanoidDescription.TorsoColor = Color3.new(1, 1, 1)
-
-	for _, Part in pairs(Details.Items) do
-		if Part.Type == "Asset" then
-			local Info = MarketplaceService:GetProductInfo(Part.Id)
-			local Type = Constants.AssetTypes[Info.AssetTypeId]
-			if Type then
-				HumanoidDescription[Type] = Part.Id
-			end
+	local outfitId;
+	for _, Item in pairs(Details.Items) do
+		if Item.Type == "UserOutfit" then
+			outfitId = Item.Id
+			break;
 		end
+	end
+
+	local ok, HumanoidDescription = pcall(function()
+		return Players:GetHumanoidDescriptionFromOutfitId(outfitId)
+	end)
+
+	if not ok then
+		warn("Failed to get HumanoidDescription")
+		return
 	end
 
 	Character.Name = Details.Name

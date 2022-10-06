@@ -19,7 +19,7 @@ function Inserter:_ApplyModifications(Object)
 			Object.Locked = false
 		end)
 
-		for _, v in pairs(Object:GetDescendants()) do
+		for _, v in Object:GetDescendants() do
 			pcall(function()
 				v.Locked = false
 			end)
@@ -49,7 +49,7 @@ function Inserter:_LoadBundle(ID)
 	if not ok then return false end
 
 	local outfitId;
-	for _, Item in pairs(Details.Items) do
+	for _, Item in Details.Items do
 		if Item.Type == "UserOutfit" then
 			outfitId = Item.Id
 			break;
@@ -96,7 +96,7 @@ function Inserter:_Insert(ID)
 	end)
 
 	if ok then
-		for _, Object in pairs(Objects) do
+		for _, Object in Objects do
 			self:_ApplyModifications(Object)
 			Object.Parent = Selected
 		end
@@ -131,7 +131,7 @@ function Inserter:Insert(Text)
 
 	local Inserted = {}
 
-	for _, ID in pairs(IDs) do
+	for _, ID in IDs do
 		local Item = self:_Insert(ID)
 		if typeof(Item) == "table" then
 			table.move(Item, 1, #Item, #Inserted + 1, Inserted)

@@ -2,6 +2,7 @@ local Plugin = script.Parent.Parent
 
 local Roact = require(Plugin.Packages.roact)
 local StudioComponents = require(Plugin.Packages.studiocomponents)
+local DefaultSettings = require(Plugin.DefaultSettings)
 
 local Checkbox = StudioComponents.Checkbox
 local Dropdown = StudioComponents.Dropdown
@@ -9,11 +10,7 @@ local Dropdown = StudioComponents.Dropdown
 local Settings = Roact.Component:extend("Settings")
 
 function Settings:init()
-	self:setState({
-		Camera = false,
-		Unlock = true,
-		Rig = "R15"
-	})
+	self:setState(DefaultSettings)
 
 	self.onUpdateCamera = function()
 		local newState = not self.state.Camera
@@ -29,6 +26,14 @@ function Settings:init()
 			Unlock = newState
 		})
 		self.props.Update("Unlock", newState)
+	end
+
+	self.onUpdateParent = function()
+		local newState = not self.state.Parent
+		self:setState({
+			Parent = newState
+		})
+		self.props.Update("Parent", newState)
 	end
 
 	self.onUpdateRig = function(item)
@@ -53,15 +58,21 @@ function Settings:render()
 			OnActivated = self.onUpdateCamera
 		}),
 		Roact.createElement(Checkbox, {
-			Label = "Unlock children",
+			Label = "Unlock Children",
 			Value = self.state.Unlock,
 			LayoutOrder = 2,
 			OnActivated = self.onUpdateLock
 		}),
+		Roact.createElement(Checkbox, {
+			Label = "Parent to Selection",
+			Value = self.state.Parent,
+			LayoutOrder = 3,
+			OnActivated = self.onUpdateParent
+		}),
 		Roact.createElement(Dropdown, {
 			Items = {"R15", "R6"},
 			Item = self.state.Rig,
-			LayoutOrder = 3,
+			LayoutOrder = 4,
 			OnSelected = self.onUpdateRig
 		}),
 		ListLayout = Roact.createElement("UIListLayout", {

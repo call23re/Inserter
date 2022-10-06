@@ -1,17 +1,15 @@
 local AssetService = game:GetService("AssetService")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local Players = game:GetService("Players")
+local Selection = game:GetService("Selection")
 
+local DefaultSettings = require(script.Parent.DefaultSettings)
 local Util = require(script.Parent.Util)
 
 local Characters = script.Parent.Models
 
 local Inserter = {
-	Settings = {
-		Unlock = true,
-		Camera = false,
-		Rig = "R15"
-	}
+	Settings = DefaultSettings
 }
 
 -- Private
@@ -47,7 +45,7 @@ function Inserter:_LoadBundle(ID)
 	local ok, Details = pcall(function()
 		return AssetService:GetBundleDetailsAsync(ID)
 	end)
-	
+
 	if not ok then return false end
 
 	local Character = (self.Settings.Rig == "R15" and Characters.R15 or Characters.R6):Clone()
@@ -77,10 +75,12 @@ function Inserter:_LoadBundle(ID)
 
 	self:_ApplyModifications(Character)
 
-	return true
+	return Character
 end
 
 function Inserter:_Insert(ID)
+	local Selected = self.Settings.Parent and Selection:Get()[1] or workspace
+
 	local ok, Objects = pcall(function()
 		return game:GetObjects("rbxassetid://" .. ID)
 	end)
@@ -88,17 +88,18 @@ function Inserter:_Insert(ID)
 	if ok then
 		for _, Object in pairs(Objects) do
 			self:_ApplyModifications(Object)
-			if Object.Parent == nil then
-				Object.Parent = workspace
-			end
+			Object.Parent = Selected
 		end
-		return true
+		return Objects
 	end
 
 	-- if it couldn't insert the id, try to insert it as a bundle
 	local Bundle = self:_LoadBundle(ID)
 
-	if not Bundle then
+	if Bundle then
+		Bundle.Parent = Selected
+		return Bundle
+	else
 		warn("Failed to insert " .. ID)
 	end
 end
@@ -116,9 +117,18 @@ function Inserter:Insert(Text)
 
 	ChangeHistoryService:SetWaypoint("PreInsert" .. os.clock())
 
+	local Inserted = {}
+
 	for _, ID in pairs(IDs) do
-		self:_Insert(ID)
+		local Item = self:_Insert(ID)
+		if typeof(Item) == "table" then
+			table.move(Item, 1, #Item, #Inserted + 1, Inserted)
+		elseif typeof(Item) ~= nil then
+			table.insert(Inserted, Item)
+		end
 	end
+
+	Selection:Set(Inserted)
 
 	ChangeHistoryService:SetWaypoint("PostInsert" .. os.clock())
 end

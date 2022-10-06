@@ -7,7 +7,7 @@ local toolbar = plugin:CreateToolbar("Inserter")
 local button = toolbar:CreateButton(
 	"Inserter",
 	"Inserter",
-	"rbxassetid://8705928346"
+	"rbxassetid://11190713352"
 )
 button.ClickableWhenViewportHidden = true
 

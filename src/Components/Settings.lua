@@ -48,7 +48,7 @@ function Settings:render()
 	return Roact.createElement("Frame", {
 		AnchorPoint = self.props.AnchorPoint,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 35),
+		Size = UDim2.new(1, 0, 0, 130),
 		Position = self.props.Position
 	}, {
 		Roact.createElement(Checkbox, {
@@ -70,7 +70,7 @@ function Settings:render()
 			OnActivated = self.onUpdateParent
 		}),
 		Roact.createElement(Dropdown, {
-			Items = {"R15", "R6"},
+			Items = {"R15", "R6", "Both"},
 			Item = self.state.Rig,
 			LayoutOrder = 4,
 			OnSelected = self.onUpdateRig

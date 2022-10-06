@@ -6,7 +6,7 @@ local Selection = game:GetService("Selection")
 local DefaultSettings = require(script.Parent.DefaultSettings)
 local Util = require(script.Parent.Util)
 
-local Characters = script.Parent.Models
+local CharacterModels = script.Parent.Models
 
 local Inserter = {
 	Settings = DefaultSettings
@@ -48,8 +48,6 @@ function Inserter:_LoadBundle(ID)
 
 	if not ok then return false end
 
-	local Character = (self.Settings.Rig == "R15" and Characters.R15 or Characters.R6):Clone()
-
 	local outfitId;
 	for _, Item in pairs(Details.Items) do
 		if Item.Type == "UserOutfit" then
@@ -67,15 +65,27 @@ function Inserter:_LoadBundle(ID)
 		return
 	end
 
-	Character.Name = Details.Name
-	Character.Parent = workspace
+	local Characters = {}
 
-	Character.Humanoid:ApplyDescription(HumanoidDescription)
-	HumanoidDescription:Destroy()
+	if self.Settings.Rig == "R15" or self.Settings.Rig == "Both" then
+		table.insert(Characters, CharacterModels.R15:Clone())
+	end
 
-	self:_ApplyModifications(Character)
+	if self.Settings.Rig == "R6" or self.Settings.Rig == "Both" then
+		table.insert(Characters, CharacterModels.R6:Clone())
+	end
 
-	return Character
+	for _, Character in Characters do
+		Character.Name = Details.Name
+		Character.Parent = workspace
+
+		Character.Humanoid:ApplyDescription(HumanoidDescription)
+		HumanoidDescription:Destroy()
+
+		self:_ApplyModifications(Character)
+	end
+
+	return Characters
 end
 
 function Inserter:_Insert(ID)
@@ -94,14 +104,16 @@ function Inserter:_Insert(ID)
 	end
 
 	-- if it couldn't insert the id, try to insert it as a bundle
-	local Bundle = self:_LoadBundle(ID)
+	local Bundles = self:_LoadBundle(ID)
 
-	if Bundle then
-		Bundle.Parent = Selected
-		return Bundle
-	else
-		warn("Failed to insert " .. ID)
+	if Bundles then
+		for _, Bundle in Bundles do
+			Bundle.Parent = Selected
+		end
+		return Bundles
 	end
+
+	warn("Failed to insert " .. ID)
 end
 
 -- Public

@@ -33,7 +33,7 @@ function MainPlugin:render()
 		Name = "inserterWidget",
 		Title = "Inserter",
 		InitialDockState = Enum.InitialDockState.Float,
-		MinimumWindowSize = Vector2.new(300, 205),
+		MinimumWindowSize = Vector2.new(300, 245),
 		OnClosed = function()
 			self:setEnabled(false)
 		end,

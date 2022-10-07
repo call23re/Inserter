@@ -6,6 +6,7 @@ local DefaultSettings = require(Plugin.DefaultSettings)
 
 local Checkbox = StudioComponents.Checkbox
 local Dropdown = StudioComponents.Dropdown
+local Label = StudioComponents.Label
 
 local Settings = Roact.Component:extend("Settings")
 
@@ -51,33 +52,54 @@ function Settings:render()
 		Size = UDim2.new(1, 0, 0, 130),
 		Position = self.props.Position
 	}, {
-		Roact.createElement(Checkbox, {
-			Label = "Place at Camera",
-			Value = self.state.Camera,
-			LayoutOrder = 1,
-			OnActivated = self.onUpdateCamera
+		-- Checkboxes
+		Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0.5, 0, 1, 0)
+		}, {
+			Roact.createElement(Checkbox, {
+				Label = "Place at Camera",
+				Value = self.state.Camera,
+				LayoutOrder = 1,
+				OnActivated = self.onUpdateCamera
+			}),
+			Roact.createElement(Checkbox, {
+				Label = "Unlock Children",
+				Value = self.state.Unlock,
+				LayoutOrder = 2,
+				OnActivated = self.onUpdateLock
+			}),
+			Roact.createElement(Checkbox, {
+				Label = "Parent to Selection",
+				Value = self.state.Parent,
+				LayoutOrder = 3,
+				OnActivated = self.onUpdateParent
+			}),
+			ListLayout = Roact.createElement("UIListLayout", {
+				Padding = UDim.new(0, 5)
+			})
 		}),
-		Roact.createElement(Checkbox, {
-			Label = "Unlock Children",
-			Value = self.state.Unlock,
-			LayoutOrder = 2,
-			OnActivated = self.onUpdateLock
+		-- Other
+		Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0.5, 0, 1, 0),
+			Position = UDim2.new(0.5, 0, 0, 0)
+		}, {
+			Roact.createElement(Label, {
+				Size = UDim2.new(1, 0, 0, 15),
+				Text = "Rig Type",
+				TextXAlignment = "Left"
+			}),
+			Roact.createElement(Dropdown, {
+				Items = {"R15", "R6", "Both"},
+				Item = self.state.Rig,
+				LayoutOrder = 4,
+				OnSelected = self.onUpdateRig
+			}),
+			ListLayout = Roact.createElement("UIListLayout", {
+				Padding = UDim.new(0, 5)
+			})
 		}),
-		Roact.createElement(Checkbox, {
-			Label = "Parent to Selection",
-			Value = self.state.Parent,
-			LayoutOrder = 3,
-			OnActivated = self.onUpdateParent
-		}),
-		Roact.createElement(Dropdown, {
-			Items = {"R15", "R6", "Both"},
-			Item = self.state.Rig,
-			LayoutOrder = 4,
-			OnSelected = self.onUpdateRig
-		}),
-		ListLayout = Roact.createElement("UIListLayout", {
-			Padding = UDim.new(0, 5)
-		})
 	})
 end
 

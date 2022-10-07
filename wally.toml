@@ -1,9 +1,9 @@
 [package]
 name = "call23re/inserter"
-version = "1.0.1"
+version = "1.1.0"
 realm = "shared"
 registry = "https://github.com/upliftgames/wally-index"
 
 [dependencies]
-roact = "roblox/roact@1.4.2"
-studiocomponents = "sircfenner/studiocomponents@0.1.1"
+roact = "roblox/roact@1.4.4"
+studiocomponents = "sircfenner/studiocomponents@0.1.3"

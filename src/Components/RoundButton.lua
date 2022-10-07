@@ -1,18 +1,16 @@
 local Plugin = script.Parent.Parent
 
 local Roact = require(Plugin.Packages.roact)
+local StudioComponents = require(Plugin.Packages.studiocomponents)
 local Util = require(Plugin.Util)
 
--- StudioComponents doesn't expose BaseButton
-local StudioComponents = Plugin.Packages._Index["sircfenner_studiocomponents@0.1.1"].studiocomponents
-
 local joinDictionaries = Util.joinDictionaries
-local Label = require(StudioComponents.Label)
-local BaseButton = require(StudioComponents.BaseButton)
+local Label = StudioComponents.Label
+local BaseButton = StudioComponents.BaseButton
 
 local function RoundButton(props)
 	local Text = props.Text
-	
+
 	return Roact.createElement(BaseButton, joinDictionaries(props, {
 		TextColorStyle = Enum.StudioStyleGuideColor.DialogMainButtonText,
 		BackgroundColorStyle = Enum.StudioStyleGuideColor.DialogMainButton,

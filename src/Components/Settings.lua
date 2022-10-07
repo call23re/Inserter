@@ -92,9 +92,10 @@ function Settings:render()
 			}),
 			Roact.createElement(Dropdown, {
 				Items = {"R15", "R6", "Both"},
-				Item = self.state.Rig,
+				SelectedItem = self.state.Rig,
+				Width = UDim.new(0, 100),
 				LayoutOrder = 4,
-				OnSelected = self.onUpdateRig
+				OnItemSelected = self.onUpdateRig
 			}),
 			ListLayout = Roact.createElement("UIListLayout", {
 				Padding = UDim.new(0, 5)

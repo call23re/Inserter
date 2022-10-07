@@ -13,7 +13,7 @@ local Inserter = {
 }
 
 -- Private
-function Inserter:_ApplyModifications(Object)
+function Inserter:_ApplyModifications(Object, Type)
 	if self.Settings.Unlock then
 		pcall(function()
 			Object.Locked = false
@@ -26,8 +26,19 @@ function Inserter:_ApplyModifications(Object)
 		end
 	end
 
-	if self.Settings.Camera then
-		local Position = CFrame.new(workspace.CurrentCamera.CFrame.Position)
+	local Camera = workspace.CurrentCamera
+	if not Camera then return end
+
+	if self.Settings.Camera or Type == "Bundle" then
+		local Position;
+
+		if Type == "Bundle" then
+			Position = CFrame.new((Camera.CFrame + (Camera.CFrame.LookVector * 15)).Position)
+		end
+
+		if self.Settings.Camera then
+			Position = CFrame.new(Camera.CFrame.Position)
+		end
 
 		if Object:IsA("Model") or Object:IsA("BasePart") then
 			Object:PivotTo(Position)
@@ -82,7 +93,7 @@ function Inserter:_LoadBundle(ID)
 		Character.Humanoid:ApplyDescription(HumanoidDescription)
 		HumanoidDescription:Destroy()
 
-		self:_ApplyModifications(Character)
+		self:_ApplyModifications(Character, "Bundle")
 	end
 
 	return Characters

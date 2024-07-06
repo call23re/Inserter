@@ -15,7 +15,7 @@ local function RoundButton(props)
 		TextColorStyle = Enum.StudioStyleGuideColor.DialogMainButtonText,
 		BackgroundColorStyle = Enum.StudioStyleGuideColor.DialogMainButton,
 		BorderColorStyle = Enum.StudioStyleGuideColor.ButtonBorder,
-		Text = ""
+		Text = "",
 	}), {
 		Corner = Roact.createElement("UICorner"),
 		Label = Roact.createElement(Label, {
@@ -24,6 +24,7 @@ local function RoundButton(props)
 			Text = Text,
 			TextSize = props.TextSize,
 			TextColorStyle = Enum.StudioStyleGuideColor.DialogMainButtonText,
+			TextTruncate = Enum.TextTruncate.SplitWord,
 			Font = props.Font,
 			ZIndex = 2,
 			Disabled = props.Disabled

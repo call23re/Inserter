@@ -1,6 +1,14 @@
-return {
-	Unlock = true, -- unlock descendants
-	Camera = false, -- move to camera
-	Parent = true, -- parent to selection
-	Rig = "R15" -- rig type (R15, R6, Both)
+export type Rig = "R6" | "R15" | "BOTH"
+export type Settings = {
+	UnlockDescendants: boolean,
+	MoveToCamera: boolean,
+	ParentToSelection: boolean,
+	Rig: Rig
 }
+
+return {
+	UnlockDescendants = true,
+	MoveToCamera = false,
+	ParentToSelection = true,
+	Rig = "R15"
+} :: Settings

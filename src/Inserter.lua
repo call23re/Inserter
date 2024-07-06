@@ -1,3 +1,5 @@
+--!strict
+
 local AssetService = game:GetService("AssetService")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local Players = game:GetService("Players")
@@ -8,13 +10,24 @@ local Util = require(script.Parent.Util)
 
 local CharacterModels = script.Parent.Models
 
-local Inserter = {
-	Settings = DefaultSettings
+type Rig = "R6" | "R15" | "BOTH"
+type Settings = {
+	UnlockDescendants: boolean,
+	MoveToCamera: boolean,
+	ParentToSelection: boolean,
+	Rig: Rig
 }
 
--- Private
-function Inserter:_ApplyModifications(Object, Type)
-	if self.Settings.Unlock then
+export type AssetType = "OBJECT" | "BUNDLE" | "CHARACTER"
+
+type Ok = { status: "OK", value: {any} }
+type Error = { status: "ERROR", error: string }
+type Result = Ok | Error
+
+local Settings = DefaultSettings :: Settings
+
+local function ApplyModifications(Object, AssetType: AssetType)
+	if Settings.UnlockDescendants then
 		pcall(function()
 			Object.Locked = false
 		end)
@@ -29,35 +42,39 @@ function Inserter:_ApplyModifications(Object, Type)
 	local Camera = workspace.CurrentCamera
 	if not Camera then return end
 
-	if self.Settings.Camera or Type == "Bundle" then
+	if Settings.MoveToCamera or AssetType ~= "OBJECT" then
 		local Position;
 
-		if Type == "Bundle" then
+		if AssetType == "BUNDLE" or AssetType == "CHARACTER" then
 			Position = CFrame.new((Camera.CFrame + (Camera.CFrame.LookVector * 15)).Position)
 		end
 
-		if self.Settings.Camera then
+		if Settings.MoveToCamera then
 			Position = CFrame.new(Camera.CFrame.Position)
 		end
 
 		if Object:IsA("Model") or Object:IsA("BasePart") then
 			Object:PivotTo(Position)
 		else
-			local ProxyModel = Instance.new("Model")
-			Object.Parent = ProxyModel
-			ProxyModel:PivotTo(Position)
-			Object.Parent = workspace
-			ProxyModel:Destroy()
+			pcall(function()
+				local ProxyModel = Instance.new("Model")
+				Object.Parent = ProxyModel
+				ProxyModel:PivotTo(Position)
+				Object.Parent = workspace
+				ProxyModel:Destroy()
+			end)
 		end
 	end
 end
 
-function Inserter:_LoadBundle(ID)
+local function LoadBundle(Id): Result
 	local ok, Details = pcall(function()
-		return AssetService:GetBundleDetailsAsync(ID)
+		return AssetService:GetBundleDetailsAsync(Id)
 	end)
 
-	if not ok then return false end
+	if not ok then
+		return { status = "ERROR", error = "Could not find bundle details" }
+	end
 
 	local outfitId;
 	for _, Item in Details.Items do
@@ -73,16 +90,16 @@ function Inserter:_LoadBundle(ID)
 
 	if not ok then
 		warn("Failed to get HumanoidDescription")
-		return
+		return { status = "ERROR", error = "Failed to get HumanoidDescription" }
 	end
 
 	local Characters = {}
 
-	if self.Settings.Rig == "R15" or self.Settings.Rig == "Both" then
+	if Settings.Rig == "R15" or Settings.Rig == "BOTH" then
 		table.insert(Characters, CharacterModels.R15:Clone())
 	end
 
-	if self.Settings.Rig == "R6" or self.Settings.Rig == "Both" then
+	if Settings.Rig == "R6" or Settings.Rig == "BOTH" then
 		table.insert(Characters, CharacterModels.R6:Clone())
 	end
 
@@ -93,67 +110,195 @@ function Inserter:_LoadBundle(ID)
 		Character.Humanoid:ApplyDescription(HumanoidDescription)
 		HumanoidDescription:Destroy()
 
-		self:_ApplyModifications(Character, "Bundle")
+		ApplyModifications(Character, "BUNDLE")
 	end
 
-	return Characters
+	return { status = "OK", value = Characters }
 end
 
-function Inserter:_Insert(ID)
-	local Selected = self.Settings.Parent and Selection:Get()[1] or workspace
+local function LoadCharacter(Id): Result
+	local Models = {}
+
+	local ok, Description = pcall(function()
+		return Players:GetHumanoidDescriptionFromUserId(Id)
+	end)
+
+	if not ok then
+		return { status = "ERROR", error = "Failed to get humanoid description" }
+	end
+
+	local ok, username = pcall(function()
+		return Players:GetNameFromUserIdAsync(Id)
+	end)
+
+	if not ok then
+		username = "Player"
+	end
+
+	if Settings.Rig == "R15" or Settings.Rig == "BOTH" then
+		local ok, Model = pcall(function()
+			return Players:CreateHumanoidModelFromDescription(Description, Enum.HumanoidRigType.R15)
+		end)
+
+		if ok then
+			Model.Name = username
+			table.insert(Models, Model)
+		end
+	end
+
+	if Settings.Rig == "R6" or Settings.Rig == "BOTH" then
+		local ok, Model = pcall(function()
+			return Players:CreateHumanoidModelFromDescription(Description, Enum.HumanoidRigType.R6)
+		end)
+
+		if ok then
+			Model.Name = username
+			table.insert(Models, Model)
+		end
+	end
+
+	if #Models == 0 then
+		return { status = "ERROR", error = "Failed to insert character" }
+	end
+
+	for _, Model in Models do
+		ApplyModifications(Model, "CHARACTER")
+	end
+
+	return { status = "OK", value = Models }
+end
+
+local function InsertObject(Id): Result
+	local Selected = Settings.ParentToSelection and Selection:Get()[1] or workspace
 
 	local ok, Objects = pcall(function()
-		return game:GetObjects("rbxassetid://" .. ID)
+		return game:GetObjects(`rbxassetid://{Id}`)
 	end)
 
 	if ok then
 		for _, Object in Objects do
-			self:_ApplyModifications(Object)
-			Object.Parent = Selected
+			ApplyModifications(Object, "OBJECT")
+			pcall(function()
+				Object.Parent = Selected
+			end)
 		end
-		return Objects
+		return { status = "OK", value = Objects }
 	end
 
-	-- if it couldn't insert the id, try to insert it as a bundle
-	local Bundles = self:_LoadBundle(ID)
-
-	if Bundles then
-		for _, Bundle in Bundles do
-			Bundle.Parent = Selected
-		end
-		return Bundles
-	end
-
-	warn("Failed to insert " .. ID)
+	warn(`Failed to insert object {Id}`)
+	return { status = "ERROR", error = "Failed to insert object" }
 end
 
--- Public
-function Inserter:ToggleSetting(Name, Value)
-	if self.Settings[Name] ~= nil then
-		self.Settings[Name] = Value
+local function InsertBundle(Id): Result
+	local Selected = Settings.ParentToSelection and Selection:Get()[1] or workspace
+
+	local Bundles = LoadBundle(Id)
+	if Bundles.status == "OK" then
+		for _, Bundle in Bundles.value do
+			pcall(function()
+				Bundle.Parent = Selected
+			end)
+		end
+		return { status = "OK", value = Bundles.value }
 	end
+
+	warn(`Failed to insert bundle {Id}`)
+	return { status = "ERROR", error = "Failed to insert bundle" }
 end
 
-function Inserter:Insert(Text)
-	local IDs = Util.ExtractIDs(Text)
-	if #IDs < 1 then return end
+local function InsertCharacter(Id): Result
+	local Selected = Settings.ParentToSelection and Selection:Get()[1] or workspace
+	
+	local Characters = LoadCharacter(Id)
+	if Characters.status == "OK" then
+		for _, Character in Characters.value do
+			pcall(function()
+				Character.Parent = Selected
+			end)
+		end
+		return { status = "OK", value = Characters.value }
+	end
 
-	ChangeHistoryService:SetWaypoint("PreInsert" .. os.clock())
+	warn(`Failed to insert player/character {Id}`)
+	return { status = "ERROR", error = "Failed to insert character" }
+end
+
+local function Insert(Id): Result
+	-- insert as asset
+	local result = InsertObject(Id)
+	if result.status == "OK" then
+		return result
+	end
+
+	-- insert as bundle
+	local result = InsertBundle(Id)
+	if result.status == "OK" then
+		return result
+	end
+
+	-- insert as character
+	local result = InsertCharacter(Id)
+	if result.status == "OK" then
+		return result
+	end
+
+	return { status = "ERROR", error = "Failed to insert" }
+end
+
+local function Process(Text, AssetType: AssetType?)
+	local Ids = Util.ExtractIds(Text)
+	if #Ids < 1 then return end
+
+	local recording = ChangeHistoryService:TryBeginRecording("Insert", "Inserting applicable asset ids.")
 
 	local Inserted = {}
 
-	for _, ID in IDs do
-		local Item = self:_Insert(ID)
-		if typeof(Item) == "table" then
-			table.move(Item, 1, #Item, #Inserted + 1, Inserted)
-		elseif typeof(Item) ~= nil then
-			table.insert(Inserted, Item)
+	if AssetType == "OBJECT" then
+		local result = InsertObject(Ids[1])
+		if result.status == "OK" then
+			Inserted = result.value
+		end
+	elseif AssetType == "BUNDLE" then
+		local result = InsertBundle(Ids[1])
+		if result.status == "OK" then
+			Inserted = result.value
+		end
+	elseif AssetType == "CHARACTER" then
+		local result = InsertCharacter(Ids[1])
+		if result.status == "OK" then
+			Inserted = result.value
+		end
+	else
+		for _, Id in Ids do
+			local result = Insert(Id)
+			if result.status ~= "OK" then continue end
+			table.move(result.value, 1, #result.value, #Inserted + 1, Inserted)
 		end
 	end
 
 	Selection:Set(Inserted)
 
-	ChangeHistoryService:SetWaypoint("PostInsert" .. os.clock())
+	if recording then
+		ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit)
+	end
 end
 
-return Inserter
+return {
+	Insert = Process,
+	-- TODO: temp
+	Toggle = function(key, value)
+		Settings[key] = value
+	end,
+	SetUnlockDescendants = function(bool: boolean)
+		Settings.UnlockDescendants = bool
+	end,
+	SetMoveToCamera = function(bool: boolean)
+		Settings.MoveToCamera = bool
+	end,
+	SetParentToSelection = function(bool: boolean)
+		Settings.ParentToSelection = bool
+	end,
+	SetRig = function(Rig: Rig)
+		Settings.Rig = Rig
+	end
+}

@@ -1,4 +1,5 @@
 --!strict
+--# selene: allow(shadowing)
 
 local AssetService = game:GetService("AssetService")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
@@ -89,7 +90,7 @@ local function LoadBundle(Id): Result
 	end)
 
 	if not ok then
-		warn("Failed to get HumanoidDescription")
+		--warn("Failed to get HumanoidDescription")
 		return { status = "ERROR", error = "Failed to get HumanoidDescription" }
 	end
 
@@ -132,7 +133,7 @@ local function LoadCharacter(Id): Result
 	end)
 
 	if not ok then
-		username = "Player"
+		return { status = "ERROR", error = "Player does not exist" }
 	end
 
 	if Settings.Rig == "R15" or Settings.Rig == "BOTH" then
@@ -185,7 +186,7 @@ local function InsertObject(Id): Result
 		return { status = "OK", value = Objects }
 	end
 
-	warn(`Failed to insert object {Id}`)
+	--warn(`Failed to insert object {Id}`)
 	return { status = "ERROR", error = "Failed to insert object" }
 end
 
@@ -202,7 +203,7 @@ local function InsertBundle(Id): Result
 		return { status = "OK", value = Bundles.value }
 	end
 
-	warn(`Failed to insert bundle {Id}`)
+	--warn(`Failed to insert bundle {Id}`)
 	return { status = "ERROR", error = "Failed to insert bundle" }
 end
 
@@ -219,7 +220,7 @@ local function InsertCharacter(Id): Result
 		return { status = "OK", value = Characters.value }
 	end
 
-	warn(`Failed to insert player/character {Id}`)
+	--warn(`Failed to insert player/character {Id}`)
 	return { status = "ERROR", error = "Failed to insert character" }
 end
 
@@ -257,22 +258,37 @@ local function Process(Text, AssetType: AssetType?)
 		local result = InsertObject(Ids[1])
 		if result.status == "OK" then
 			Inserted = result.value
+		else
+			warn(`{result.error} {Ids[1]}`)
 		end
 	elseif AssetType == "BUNDLE" then
 		local result = InsertBundle(Ids[1])
 		if result.status == "OK" then
 			Inserted = result.value
+		else
+			warn(`{result.error} {Ids[1]}`)
 		end
 	elseif AssetType == "CHARACTER" then
 		local result = InsertCharacter(Ids[1])
 		if result.status == "OK" then
 			Inserted = result.value
+		else
+			warn(`{result.error} {Ids[1]}`)
 		end
 	else
+		local NumFails = 0
+		local FailString = ""
 		for _, Id in Ids do
 			local result = Insert(Id)
-			if result.status ~= "OK" then continue end
+			if result.status ~= "OK" then
+				FailString ..= if #FailString == 0 then Id else ", " .. Id
+				NumFails += 1
+				continue
+			end
 			table.move(result.value, 1, #result.value, #Inserted + 1, Inserted)
+		end
+		if NumFails > 0 then
+			warn(`Failed to insert{if NumFails > 1 then ":" else ""} {FailString}`)
 		end
 	end
 
